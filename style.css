@@ -50,7 +50,6 @@ header {
     background: none;
     border: none;
 
-
     & button{
       transform: rotate(90deg);
       width: 100%;
@@ -58,6 +57,7 @@ header {
       border: none;
       background: none;
       cursor: pointer;
+      color: #;
     }
   }
 }

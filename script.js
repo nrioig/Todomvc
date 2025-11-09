@@ -121,7 +121,7 @@ renderList = () => {
   });
 
   left.textContent =
-    comLength <= 1 ? `${comLength} item left` : `${comLength} items left`;
+    comLength === 1 ? `${comLength} item left` : `${comLength} items left`;
 };
 
 renderList();
@@ -170,19 +170,9 @@ clearCom.addEventListener("click", () => {
 });
 
 allCom.addEventListener("click", () => {
-  let comLength = 0;
+  const isAll = liData.every((e) => e.completed);
 
-  liData.forEach((e) => {
-    if (e.completed) comLength++;
-  });
-
-  liData = liData.map((e) => {
-    if (comLength === liData.length) {
-      return { ...e, completed: false };
-    } else{
-      return { ...e, completed: true };
-    }
-  });
+  liData.forEach((e) => e.completed = !isAll);
 
   setData();
   renderList();
