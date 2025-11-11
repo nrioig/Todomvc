@@ -175,5 +175,4 @@ allCom.addEventListener("click", () => {
   liData.forEach((e) => e.completed = !isAll);
 
   setData();
-  renderList();
 });
