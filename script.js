@@ -7,6 +7,12 @@ const left = document.querySelector(".left");
 const clearCom = document.querySelector(".clear-com");
 const allCom = document.querySelector(".all-com");
 let currentTab = "all";
+const tabMap = {
+  "#/": "all",
+  "#/Active": "active",
+  "#/Completed": "completed",
+};
+
 let liData = JSON.parse(localStorage.getItem("data")) || [];
 
 function setData() {
@@ -20,39 +26,82 @@ function btnCheck(i) {
     }
   });
 
-  setData();
-
-  renderList();
+  update();
 }
 
 function delFuc(i) {
   liData = liData.filter((e) => e.idx != i.idx);
 
-  setData();
+  update();
+}
 
+function update() {
+  setData();
   renderList();
 }
 
-renderList = () => {
+function renderTab() {
+  tabs.forEach((e) => {
+    if (e.classList.contains(currentTab)) {
+      e.classList.add("isActive");
+    } else {
+      e.classList.remove("isActive");
+    }
+  });
+}
+
+function renderList() {
   let filtered = [];
 
-  if (currentTab === "active") {
-    filtered = liData.filter((e) => {
-      return e.completed === false;
-    });
-  } else if (currentTab === "completed") {
-    filtered = liData.filter((e) => {
-      return e.completed === true;
-    });
-  } else {
-    filtered = liData;
-  }
+  const filterMap = {
+    all: () => liData,
+
+    active: () => liData.filter((e) => !e.completed),
+
+    completed: () => liData.filter((e) => e.completed),
+  };
+
+  filtered = (filterMap[currentTab] || filterMap.all)();
 
   todoContainer.classList.toggle("active", liData.length > 0);
 
   todoList.innerHTML = "";
 
+  renderTab()
+
   filtered.forEach((e) => {
+    const create = (element, attri = {}) => {
+      return Object.assign(document.createElement(element), attri);
+    };
+
+    const li = create("li", {
+      className: e.completed ? "completed" : "",
+    });
+    const liCon = create("div", {
+      className: "li-container",
+    });
+    const checkBtn = create("button", {
+      className: "check-btn",
+      textContent: e.completed ? "✓" : "",
+    });
+    const listP = create("p", {
+      textContent: e.text,
+    });
+    const delBtn = create("button", {
+      className: "del-btn",
+      textContent: "X",
+    });
+
+    liCon.append(checkBtn, listP);
+    li.append(liCon, delBtn);
+    todoList.append(li);
+
+    delBtn.addEventListener("click", () => delFuc(e));
+
+    checkBtn.addEventListener("click", () => btnCheck(e.idx));
+
+    li.addEventListener("dblclick", (e) => dbclickFuc());
+
     function dbclickFuc() {
       const editInput = document.createElement("input");
       let undo = listP.textContent;
@@ -63,14 +112,10 @@ renderList = () => {
 
       editInput.addEventListener("keydown", (e) => {
         if (e.key !== "Enter") return;
-        try {
-          editFuc();
-        } catch (error) {}
+        editFuc();
       });
       editInput.addEventListener("blur", () => {
-        try {
-          editFuc();
-        } catch (error) {}
+        editFuc();
       });
 
       function editFuc() {
@@ -79,40 +124,10 @@ renderList = () => {
           renderList();
         } else {
           e.text = editInput.value;
-          setData();
-          renderList();
+          update();
         }
       }
     }
-
-    const li = document.createElement("li");
-    const liCon = document.createElement("div");
-    const checkBtn = document.createElement("button");
-    const listP = document.createElement("p");
-    const delBtn = document.createElement("button");
-
-    checkBtn.className = "check-btn";
-    delBtn.className = "del-btn";
-    liCon.className = "li-container";
-    li.classList.toggle("completed", e.completed);
-    e.completed ? (checkBtn.textContent = "✓") : (checkBtn.textContent = "");
-
-    listP.textContent = e.text;
-    delBtn.textContent = "X";
-
-    liCon.append(checkBtn);
-    liCon.append(listP);
-
-    li.append(liCon);
-    li.append(delBtn);
-
-    todoList.append(li);
-
-    delBtn.addEventListener("click", () => delFuc(e));
-
-    checkBtn.addEventListener("click", () => btnCheck(e.idx));
-
-    li.addEventListener("dblclick", (e) => dbclickFuc());
   });
   let comLength = 0;
 
@@ -122,7 +137,7 @@ renderList = () => {
 
   left.textContent =
     comLength === 1 ? `${comLength} item left` : `${comLength} items left`;
-};
+}
 
 renderList();
 
@@ -135,29 +150,19 @@ input.addEventListener("keydown", (e) => {
     completed: false,
   });
 
-  setData();
-
-  renderList();
+  update();
 
   input.value = "";
 });
+window.addEventListener("hashchange", () => {
+  const hash = window.location.hash;
 
-tab.addEventListener("click", (btn) => {
-  if (btn.target.classList.contains("all")) {
-    currentTab = "all";
-  } else if (btn.target.classList.contains("active")) {
-    currentTab = "active";
-  } else if (btn.target.classList.contains("completed")) {
-    currentTab = "completed";
-  }
-  tabs.forEach((e) => {
-    if (e.classList.contains(currentTab)) {
-      e.style.border = "1px solid red";
-    } else {
-      e.style.border = "none";
-    }
-  });
-  renderList();
+  const newTab = tabMap[hash];
+  console.log(hash);
+
+  currentTab = newTab;
+
+  update();
 });
 
 clearCom.addEventListener("click", () => {
@@ -165,14 +170,13 @@ clearCom.addEventListener("click", () => {
     return e.completed === false;
   });
 
-  setData();
-  renderList();
+  update();
 });
 
 allCom.addEventListener("click", () => {
   const isAll = liData.every((e) => e.completed);
 
-  liData.forEach((e) => e.completed = !isAll);
+  liData.forEach((e) => (e.completed = !isAll));
 
-  setData();
+  update();
 });
