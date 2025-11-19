@@ -1,19 +1,40 @@
-const input = document.querySelector(".input-container input");
-const todoList = document.querySelector(".todoList");
-const todoContainer = document.querySelector(".todos-content");
-const tab = document.querySelector(".tab");
-const tabs = tab.querySelectorAll("button");
-const left = document.querySelector(".left");
-const clearCom = document.querySelector(".clear-com");
-const allCom = document.querySelector(".all-com");
+const { createElement } = require("react");
+
+const $ = (element) => document.querySelector(element);
+const $$ = (element) => document.querySelectorAll(element);
+
+const $input = $(".input-container input");
+const $todoList = $(".todoList");
+const $todoContainer = $(".todos-content");
+const $tabs = $$(".tab button");
+const $left = $(".left");
+const $clearCom = $(".clear-com");
+const $allCom = $(".all-com");
+
 let currentTab = "all";
 const tabMap = {
   "#/": "all",
   "#/Active": "active",
   "#/Completed": "completed",
 };
+const filterMap = {
+  all: () => liData,
+  active: () => liData.filter((e) => !e.completed),
+  completed: () => liData.filter((e) => e.completed),
+};
 
 let liData = JSON.parse(localStorage.getItem("data")) || [];
+
+const services = {
+  deleteTodoByIdx(idx){
+    return liData.filter(  e => e.idx != idx );
+  },
+
+  get isAllCompleted(){
+    return liData.every((e) => e.completed)
+  }
+}
+
 
 const create = (element, attri = {}) => {
   return Object.assign(document.createElement(element), attri);
@@ -33,11 +54,11 @@ function btnCheck(i) {
   update();
 }
 
-function delFuc(i) {
-  liData = liData.filter((e) => e.idx != i.idx);
+// function delFuc(i) {
+//   liData = liData.filter((e) => e.idx != i.idx);
 
-  update();
-}
+//   update();
+// }
 
 function update() {
   setData();
@@ -45,7 +66,7 @@ function update() {
 }
 
 function renderTab() {
-  tabs.forEach((e) => {
+  $tabs.forEach((e) => {
     if (e.classList.contains(currentTab)) {
       e.classList.add("isActive");
     } else {
@@ -57,92 +78,68 @@ function renderTab() {
 function renderList() {
   let filtered = [];
 
-  const filterMap = {
-    all: () => liData,
-
-    active: () => liData.filter((e) => !e.completed),
-
-    completed: () => liData.filter((e) => e.completed),
-  };
-
   filtered = (filterMap[currentTab] || filterMap.all)();
 
-  todoContainer.classList.toggle("active", liData.length > 0);
-
-  todoList.innerHTML = "";
+  $todoContainer.classList.toggle("active", liData.length > 0);
+  $todoList.innerHTML = "";
 
   renderTab()
 
   filtered.forEach((e) => {
 
-    const li = create("li", {
+    const $li = create("li", {
       className: e.completed ? "completed" : "",
+      innerHTML: `
+        <div class="li-container">
+          <button class="check-btn">${e.completed ? '✓' :'' } </button>
+          <p></p>
+          <button class="del-btn">X</button>
+        </div>
+      `
     });
-    const liCon = create("div", {
-      className: "li-container",
+    const $delBtn = $li.querySelector('.del-btn');
+    const $checkBtn = $li.querySelector('.check-btn')
+    const $text = $li.querySelector('p');
+    $text.textContent = e.text;
+
+    $delBtn.addEventListener("click", () => {
+      liData = services.deleteTodoByIdx(e.idx);
+      update();
     });
-    const checkBtn = create("button", {
-      className: "check-btn",
-      textContent: e.completed ? "✓" : "",
-    });
-    const listP = create("p", {
-      textContent: e.text,
-    });
-    const delBtn = create("button", {
-      className: "del-btn",
-      textContent: "X",
-    });
+    $checkBtn.addEventListener("click", () => btnCheck(e.idx));
+    $li.addEventListener("dblclick", handleDbClick);
 
-    liCon.append(checkBtn, listP);
-    li.append(liCon, delBtn);
-    todoList.append(li);
+    function handleDbClick() {
+      const $editInput = createElement('input',{
+        textContent:e.text
+      })
+      $editInput.focus();
 
-    delBtn.addEventListener("click", () => delFuc(e));
-
-    checkBtn.addEventListener("click", () => btnCheck(e.idx));
-
-    li.addEventListener("dblclick", (e) => dbclickFuc());
-
-    function dbclickFuc() {
-      const editInput = document.createElement("input");
-      let undo = listP.textContent;
-      editInput.value = listP.textContent;
-      listP.textContent = "";
-      listP.append(editInput);
-      editInput.focus();
-
-      editInput.addEventListener("keydown", (e) => {
+      $editInput.addEventListener("keydown", (e) => {
         if (e.key !== "Enter") return;
         editFuc();
       });
-      editInput.addEventListener("blur", () => {
+      $editInput.addEventListener("blur", () => {
         editFuc();
       });
 
       function editFuc() {
-        if (editInput.value.trim() === "") {
-          listP.textContent = undo;
-          renderList();
-        } else {
-          e.text = editInput.value;
-          update();
-        }
+        if ($editInput.value.trim() !== "") {
+          e.text = $editInput.value;
+        } 
+        update();
       }
     }
   });
-  let comLength = 0;
+  const comLength = filterMap.active().length;
 
-  liData.forEach((e) => {
-    if (!e.completed) comLength++;
-  });
-
-  left.textContent =
+  $left.textContent =
     comLength === 1 ? `${comLength} item left` : `${comLength} items left`;
 }
 
 renderList();
 
-input.addEventListener("keydown", (e) => {
+$input.addEventListener("keydown", (e) => {
   if (e.key !== "Enter" || !input.value.trim()) return;
 
   liData.push({
@@ -166,7 +163,7 @@ window.addEventListener("hashchange", () => {
   update();
 });
 
-clearCom.addEventListener("click", () => {
+$clearCom.addEventListener("click", () => {
   liData = liData.filter((e) => {
     return e.completed === false;
   });
@@ -174,10 +171,9 @@ clearCom.addEventListener("click", () => {
   update();
 });
 
-allCom.addEventListener("click", () => {
-  const isAll = liData.every((e) => e.completed);
-
-  liData.forEach((e) => (e.completed = !isAll));
+$allCom.addEventListener("click", () => {
+  const isAll = services.isAllCompleted;
+  liData = isAll ? filterMap.active() : filterMap.completed()
 
   update();
 });
