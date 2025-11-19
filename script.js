@@ -15,6 +15,10 @@ const tabMap = {
 
 let liData = JSON.parse(localStorage.getItem("data")) || [];
 
+const create = (element, attri = {}) => {
+  return Object.assign(document.createElement(element), attri);
+};
+
 function setData() {
   localStorage.setItem("data", JSON.stringify(liData));
 }
@@ -70,9 +74,6 @@ function renderList() {
   renderTab()
 
   filtered.forEach((e) => {
-    const create = (element, attri = {}) => {
-      return Object.assign(document.createElement(element), attri);
-    };
 
     const li = create("li", {
       className: e.completed ? "completed" : "",
